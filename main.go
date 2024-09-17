@@ -82,7 +82,7 @@ func printConfigHelp() {
 	fmt.Println("\nAvailable keys:")
 	fmt.Println("  api_key    Set the OpenAI API key")
 	fmt.Println("  language   Set the language for PR title and description (e.g., 'en' for English, 'ja' for Japanese)")
-	fmt.Println("  template   Set the template for PR description (e.g., 'default' for the default template, 'custom' for a custom template: './.github/PULL_REQUEST_TEMPLATE.md')")
+	fmt.Println("  template   Set the template for PR description (e.g., custom template path like: './.github/pull_request_template.md', 'basic' for the basic template)")
 	fmt.Println("  prompt     Set the custom prompt for AI generation")
 	fmt.Println("\nOptions:")
 	fmt.Println("  --help, -h     Show this help message")

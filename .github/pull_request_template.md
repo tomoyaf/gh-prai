@@ -1,9 +1,19 @@
-<!-- 以下に任意のテンプレート文言を書きます。 -->
+## Overview
 
-## 概要
+<!-- Provide a brief summary of the changes in this PR -->
 
-<!-- 変更の内容についての簡単な説明 -->
+## Purpose
 
-## 詳細
+<!-- Explain the main purpose or goal of these changes -->
 
-<!-- 変更の内容についての詳細な説明 -->
+## Implementation Details
+
+<!-- Describe how you implemented the changes -->
+
+## Additional Context
+
+<!-- Add any other context about the PR here -->
+
+## Notes for Reviewers
+
+<!-- Any specific areas you want reviewers to focus on? -->

@@ -20,7 +20,7 @@ func loadConfig() Config {
 	if err != nil {
 		return Config{
 			Language: "ja",
-			Template: "default",
+			Template: "./.github/pull_request_template.md",
 			Prompt:   getDefaultPrompt(),
 		}
 	}
