@@ -237,6 +237,68 @@ func getCurrentBranch() (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
+func generatePRTitle(diff string, config Config) (string, error) {
+	colorPrint := color.New(color.FgHiGreen, color.Bold)
+	client := openai.NewClient(config.APIKey)
+
+	req := openai.ChatCompletionRequest{
+		Model: openai.GPT4oMini,
+		Messages: []openai.ChatCompletionMessage{
+				{
+					Role: openai.ChatMessageRoleSystem,
+					Content: `You are an AI assistant that generates concise, informative, and impactful Pull Request titles based on the provided diff. Strictly adhere to these rules:
+							1. Start with an English type prefix (feat, fix, docs, style, refactor, test, chore) followed by a colon and a space.
+							2. Use the specified language (config.Language) for the main content of the title. This is crucial and takes precedence over any language used in pull_request_template.md.
+							3. Use present tense, imperative mood verbs (e.g., "Add", "Update", "Fix", "Implement" or their equivalents in the specified language).
+							4. Be extremely specific about the changes, focusing on the most important aspect.
+							5. Include the affected component, file, or module name.
+							6. Keep the title between 30-50 characters, prioritizing brevity and clarity.
+							7. If there's a ticket number, include it in square brackets at the beginning.
+							8. For breaking changes, start with "[BREAKING]".
+							9. Mention the programming language or framework only if it's the main focus of the change.
+							10. Use technical terms precisely and avoid general descriptions.
+							11. Exclude articles and unnecessary words to maximize information density.
+							12. For documentation changes, specify the exact nature of the update.
+							13. Use English technical terms if they are more appropriate or widely used in the tech context, even when the main content is in another language.
+							14. Always prioritize the language specified in config.Language, regardless of the language used in pull_request_template.md.
+							Remember, the title should allow developers to immediately understand the core change without reading the full diff. The language specified in config.Language must be used for the main content, with exceptions only for widely accepted English technical terms.`,
+			},
+			{
+					Role:    openai.ChatMessageRoleUser,
+					Content: fmt.Sprintf("Generate a short, impactful, and descriptive Pull Request title in %s for the following diff. Remember to use %s as the primary language, regardless of the language in pull_request_template.md:\n\n%s", config.Language, config.Language, diff),
+			},
+		},
+		MaxTokens: 60,
+		Stream:    true,
+	}
+
+	ctx := context.Background()
+
+	stream, err := client.CreateChatCompletionStream(ctx, req)
+	if err != nil {
+		return "", err
+	}
+	defer stream.Close()
+
+	var fullResponse strings.Builder
+
+	for {
+		response, err := stream.Recv()
+		if errors.Is(err, io.EOF) {
+			fmt.Print("\n")
+			return fullResponse.String(), nil
+		}
+
+		if err != nil {
+			return "", err
+		}
+
+		content := response.Choices[0].Delta.Content
+		colorPrint.Print(content)
+		fullResponse.WriteString(content)
+	}
+}
+
 func generatePRDescription(diff, template string, config Config) (string, error) {
 	colorPrint := color.New(color.FgHiGreen, color.Bold)
 	client := openai.NewClient(config.APIKey)
@@ -278,67 +340,6 @@ func generatePRDescription(diff, template string, config Config) (string, error)
 			},
 		},
 		MaxTokens: 800,
-		Stream:    true,
-	}
-
-	ctx := context.Background()
-
-	stream, err := client.CreateChatCompletionStream(ctx, req)
-	if err != nil {
-		return "", err
-	}
-	defer stream.Close()
-
-	var fullResponse strings.Builder
-
-	for {
-		response, err := stream.Recv()
-		if errors.Is(err, io.EOF) {
-			fmt.Print("\n")
-			return fullResponse.String(), nil
-		}
-
-		if err != nil {
-			return "", err
-		}
-
-		content := response.Choices[0].Delta.Content
-		colorPrint.Print(content)
-		fullResponse.WriteString(content)
-	}
-}
-
-func generatePRTitle(diff string, config Config) (string, error) {
-	colorPrint := color.New(color.FgHiGreen, color.Bold)
-	client := openai.NewClient(config.APIKey)
-
-	req := openai.ChatCompletionRequest{
-		Model: openai.GPT4oMini,
-		Messages: []openai.ChatCompletionMessage{
-			{
-				Role: openai.ChatMessageRoleSystem,
-				Content: `You are an AI assistant that generates concise, informative, and impactful Pull Request titles based on the provided diff. Strictly adhere to these rules:
-					1. Start with an English type prefix (feat, fix, docs, style, refactor, test, chore) followed by a colon and a space.
-					2. Use the specified language for the main content of the title, unless English terms are more appropriate or widely used in the tech context.
-					3. Use present tense, imperative mood verbs (e.g., "Add", "Update", "Fix", "Implement" or their equivalents in the specified language).
-					4. Be extremely specific about the changes, focusing on the most important aspect.
-					5. Include the affected component, file, or module name.
-					6. Keep the title between 30-50 characters, prioritizing brevity and clarity.
-					7. If there's a ticket number, include it in square brackets at the beginning.
-					8. For breaking changes, start with "[BREAKING]".
-					9. Mention the programming language or framework only if it's the main focus of the change.
-					10. Use technical terms precisely and avoid general descriptions.
-					11. Exclude articles and unnecessary words to maximize information density.
-					12. For documentation changes, specify the exact nature of the update.
-					13. Blend languages appropriately if technical terms are better left in English.
-					Remember, the title should allow developers to immediately understand the core change without reading the full diff.`,
-			},
-			{
-				Role:    openai.ChatMessageRoleUser,
-				Content: fmt.Sprintf("Generate a short, impactful, and descriptive Pull Request title in %s for the following diff:\n\n%s", config.Language, diff),
-			},
-		},
-		MaxTokens: 60,
 		Stream:    true,
 	}
 
