@@ -32,7 +32,7 @@ func loadConfig() Config {
 
 func saveConfig(config Config) error {
 	configPath := getConfigPath()
-	
+
 	// Ensure the directory exists
 	configDir := filepath.Dir(configPath)
 	err := os.MkdirAll(configDir, 0755)

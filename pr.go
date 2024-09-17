@@ -22,7 +22,7 @@ func init() {
 func createPR() {
 	colorPrint := color.New(color.FgHiGreen, color.Bold)
 	errorPrint := color.New(color.FgHiRed, color.Bold)
-	
+
 	flag.Parse()
 
 	config := loadConfig()
@@ -40,7 +40,7 @@ func createPR() {
 			os.Exit(1)
 		}
 	}
-	
+
 	headBranch, _ := getCurrentBranch()
 	existingPR, err := checkExistingPR(baseBranch, headBranch)
 	if err != nil {
@@ -110,7 +110,7 @@ func createPR() {
 			errorPrint.Printf("Error updating PR: %v\n", err)
 			os.Exit(1)
 		}
-		
+
 		pullRequestUrl := getPullRequestUrl(existingPR.Number)
 
 		colorPrint.Printf("\n\n%s #%d\n%s\n\n", title, existingPR.Number, pullRequestUrl)
@@ -225,13 +225,13 @@ func generatePRDescription(diff, template string, config Config) (string, error)
 
 	client := openai.NewClient(config.APIKey)
 	resp, err := client.CreateChatCompletion(
-    context.Background(),
-    openai.ChatCompletionRequest{
-        Model: openai.GPT4oMini,
-        Messages: []openai.ChatCompletionMessage{
-            {
-                Role:    openai.ChatMessageRoleSystem,
-                Content: `You are an AI assistant specialized in creating concise and informative Pull Request (PR) descriptions. Your task is to analyze the provided code diff and generate a clear, structured PR description that focuses on essential information. Follow these guidelines:
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: openai.GPT4oMini,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role: openai.ChatMessageRoleSystem,
+					Content: `You are an AI assistant specialized in creating concise and informative Pull Request (PR) descriptions. Your task is to analyze the provided code diff and generate a clear, structured PR description that focuses on essential information. Follow these guidelines:
 
 1. Title: Use the first line of the description as a clear, concise title that summarizes the main purpose of the changes.
 
@@ -252,14 +252,14 @@ func generatePRDescription(diff, template string, config Config) (string, error)
 7. Ensure the description is free of grammatical errors and uses clear, professional language.
 
 The goal is to create a PR description that provides all necessary information about the changes in a brief, easily scannable format.`,
-            },
-            {
-                Role:    openai.ChatMessageRoleUser,
-                Content: fmt.Sprintf("Generate a Pull Request description in %s for the following diff, using this template:\n\nTemplate:\n%s\n\nDiff:\n%s", config.Language, template, diff),
-            },
-        },
-        MaxTokens: 800,
-    },
+				},
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: fmt.Sprintf("Generate a Pull Request description in %s for the following diff, using this template:\n\nTemplate:\n%s\n\nDiff:\n%s", config.Language, template, diff),
+				},
+			},
+			MaxTokens: 800,
+		},
 	)
 
 	if err != nil {
@@ -274,13 +274,13 @@ func generatePRTitle(diff string, config Config) (string, error) {
 
 	client := openai.NewClient(config.APIKey)
 	resp, err := client.CreateChatCompletion(
-    context.Background(),
-    openai.ChatCompletionRequest{
-        Model: openai.GPT4oMini,
-        Messages: []openai.ChatCompletionMessage{
-            {
-                Role:    openai.ChatMessageRoleSystem,
-                Content: `You are an AI assistant that generates concise, informative, and impactful Pull Request titles based on the provided diff. Strictly adhere to these rules:
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: openai.GPT4oMini,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role: openai.ChatMessageRoleSystem,
+					Content: `You are an AI assistant that generates concise, informative, and impactful Pull Request titles based on the provided diff. Strictly adhere to these rules:
                 1. Start with an English type prefix (feat, fix, docs, style, refactor, test, chore) followed by a colon and a space.
                 2. Use the specified language for the main content of the title, unless English terms are more appropriate or widely used in the tech context.
                 3. Use present tense, imperative mood verbs (e.g., "Add", "Update", "Fix", "Implement" or their equivalents in the specified language).
@@ -295,14 +295,14 @@ func generatePRTitle(diff string, config Config) (string, error) {
                 12. For documentation changes, specify the exact nature of the update.
                 13. Blend languages appropriately if technical terms are better left in English.
                 Remember, the title should allow developers to immediately understand the core change without reading the full diff.`,
-            },
-            {
-                Role:    openai.ChatMessageRoleUser,
-                Content: fmt.Sprintf("Generate a short, impactful, and descriptive Pull Request title in %s for the following diff:\n\n%s", config.Language, diff),
-            },
-        },
-        MaxTokens: 60,
-    },
+				},
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: fmt.Sprintf("Generate a short, impactful, and descriptive Pull Request title in %s for the following diff:\n\n%s", config.Language, diff),
+				},
+			},
+			MaxTokens: 60,
+		},
 	)
 
 	if err != nil {
@@ -341,7 +341,7 @@ func promptForEdit(fieldName, content string) string {
 
 func editInEditor(content string) (string, error) {
 	tempFile, err := os.CreateTemp("", "pr-edit-*")
-	
+
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp file: %v", err)
 	}
@@ -357,7 +357,7 @@ func editInEditor(content string) (string, error) {
 
 	editor := os.Getenv("EDITOR")
 	if editor == "" {
-		editor = "vim"  // Default to vim if EDITOR is not set
+		editor = "vim" // Default to vim if EDITOR is not set
 	}
 
 	cmd := exec.Command(editor, tempFile.Name())
@@ -383,4 +383,3 @@ func promptUser(prompt string) bool {
 	fmt.Scanln(&response)
 	return strings.ToLower(response) != "n"
 }
-
