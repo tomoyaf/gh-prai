@@ -1,4 +1,8 @@
 ## PRAI
+[GitHub CLI Extension](https://docs.github.com/ja/github-cli/github-cli/about-github-cli)
+
+ChatGPT API generates Pull Requests title and description.
+
 1. Generate the title and body of the Pull Request with ChatGPT API based on git diff
 2. Create a new Pull Request or update an existing Pull Request based on this title and body.
 
