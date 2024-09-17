@@ -10,8 +10,7 @@ https://github.com/user-attachments/assets/b09d5c22-6711-4bbc-b652-3675b922c0fe
 
 `↓ gh prai config language en`
 
-https://github.com/user-attachments/assets/a203b48e-5937-4cd7-a109-c184a6571e6c
-
+https://github.com/user-attachments/assets/011514dc-348e-417d-b753-ee3e7144c87f
 
 
 ### How to install?
