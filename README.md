@@ -1,22 +1,34 @@
 ## PRAI
+1. Generate the title and body of the Pull Request with ChatGPT API based on git diff
+2. Create a new Pull Request or update an existing Pull Request based on this title and body.
 
 ### How to install?
 
-`$ gh extension install tomoyaf/gh-prai`
+```shell
+gh extension install tomoyaf/gh-prai
+```
 
 ### How to use?
 
-`$ gh prai config api_key YOUR_OPENAI_API_KEY`
-
-`$ gh prai # or 'gh prai create'`
-
+```shell
+gh prai config api_key YOUR_OPENAI_API_KEY
 ```
-$ gh prai config language ja  # or 'en'
-$ gh prai config template default  # or 'local'
-$ gh prai config prompt "Your custom prompt"
+
+```shell
+gh prai # or 'gh prai create'
+```
+
+```shell
+gh prai config language ja  # or 'en'
+```
+```shell
+gh prai config template default  # or 'local'
+```
+```shell
+gh prai config prompt "Your custom prompt"
 ```
 
 ### Description
 
-- ChatGPT API を使って、Pull Request の本文を生成します
-- `gh pr create`を内包しており、PR 作成まで実行します
+- Uses the ChatGPT API to generate the body of a Pull Request
+- Contains `gh pr create`, which performs up to PR creation.
