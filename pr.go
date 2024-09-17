@@ -28,7 +28,7 @@ func createPR() {
 	flag.Parse()
 
 	config := loadConfig()
-
+	
 	if config.APIKey == "" {
 		errorPrint.Println("OpenAI API key is not set. Please set it using 'gh prai config api_key YOUR_API_KEY'\nsee: https://platform.openai.com/api-keys")
 		os.Exit(1)
@@ -69,8 +69,9 @@ func createPR() {
 		os.Exit(1)
 	}
 
-	fmt.Println("\n🤖 Title")
 	template := loadTemplate(config.Template)
+	
+	fmt.Println("\n🤖 Title")
 	title, err := generatePRTitle(diff, config)
 	if err != nil {
 		errorPrint.Printf("Error generating PR title: %v\n", err)
@@ -243,33 +244,37 @@ func generatePRDescription(diff, template string, config Config) (string, error)
 	req := openai.ChatCompletionRequest{
 		Model: openai.GPT4oMini,
 		Messages: []openai.ChatCompletionMessage{
-			{
-				Role: openai.ChatMessageRoleSystem,
-				Content: `You are an AI assistant specialized in creating concise and informative Pull Request (PR) descriptions. Your task is to analyze the provided code diff and generate a clear, structured PR description that focuses on essential information. Follow these guidelines:
+				{
+					Role: openai.ChatMessageRoleSystem,
+					Content: `You are an AI assistant specialized in creating concise and informative Pull Request (PR) descriptions. Your task is to analyze the provided code diff and generate a clear, structured PR description that focuses on essential information. Follow these guidelines:
 
-1. Title: Use the first line of the description as a clear, concise title that summarizes the main purpose of the changes.
+	1. Language: Always use the language specified in the config.Language parameter, regardless of the language used in the provided template. This is crucial and takes precedence over any language in the template.
 
-2. Overview: Provide a brief, high-level summary of the changes and their purpose. Limit this to 1-2 sentences.
+	2. Title: Use the first line of the description as a clear, concise title that summarizes the main purpose of the changes.
 
-3. Detailed Changes: List all specific changes made, using bullet points. Group related changes and use sub-bullets for more detailed points. Focus on:
-- Files modified
-- Sections added, removed, or renamed
-- New features or functionality added
-- Specific improvements or clarifications made
+	3. Overview: Provide a brief, high-level summary of the changes and their purpose. Limit this to 1-2 sentences.
 
-4. Keep the description concise and to the point. Avoid unnecessary explanations or background information unless absolutely crucial for understanding the changes.
+	4. Detailed Changes: List all specific changes made, using bullet points. Group related changes and use sub-bullets for more detailed points. Focus on:
+	- Files modified
+	- Sections added, removed, or renamed
+	- New features or functionality added
+	- Specific improvements or clarifications made
 
-5. Use appropriate Markdown syntax for formatting, especially for bullet points and sub-bullets.
+	5. Keep the description concise and to the point. Avoid unnecessary explanations or background information unless absolutely crucial for understanding the changes.
 
-6. Do not include sections for 'Related Issues', 'Testing Instructions', 'Performance Impact', or any other additional information unless explicitly present in the diff or absolutely necessary for understanding the changes.
+	6. Use appropriate Markdown syntax for formatting, especially for bullet points and sub-bullets.
 
-7. Ensure the description is free of grammatical errors and uses clear, professional language.
+	7. Do not include sections for 'Related Issues', 'Testing Instructions', 'Performance Impact', or any other additional information unless explicitly present in the diff or absolutely necessary for understanding the changes.
 
-The goal is to create a PR description that provides all necessary information about the changes in a brief, easily scannable format.`,
+	8. Ensure the description is free of grammatical errors and uses clear, professional language.
+
+	9. Template Structure: While following the structure of the provided template, always prioritize using the language specified in config.Language for the content.
+
+	The goal is to create a PR description that provides all necessary information about the changes in a brief, easily scannable format, using the specified language from config.Language.`,
 			},
 			{
 				Role:    openai.ChatMessageRoleUser,
-				Content: fmt.Sprintf("Generate a Pull Request description in %s for the following diff, using this template:\n\nTemplate:\n%s\n\nDiff:\n%s", config.Language, template, diff),
+				Content: fmt.Sprintf("Generate a Pull Request description in %s for the following diff, using this template structure but prioritizing the specified language:\n\nTemplate:\n%s\n\nDiff:\n%s", config.Language, template, diff),
 			},
 		},
 		MaxTokens: 800,

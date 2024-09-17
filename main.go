@@ -17,7 +17,7 @@ func main() {
 	var configHelp bool
 	configCmd.BoolVar(&configHelp, "help", false, "Show help for config command")
 	configCmd.BoolVar(&configHelp, "h", false, "Show help for config command")
-
+	
 	if len(os.Args) == 1 {
 		createPR()
 		os.Exit(0)
@@ -43,12 +43,37 @@ func main() {
 			printConfigHelp()
 			os.Exit(0)
 		}
-		if configCmd.NArg() < 2 {
-			fmt.Println("Error: Insufficient arguments for config command")
-			printConfigHelp()
-			os.Exit(1)
+		switch configCmd.Arg(0) {
+		case "show":
+			if configCmd.Arg(1) == "-h" || configCmd.Arg(1) == "--help" {
+				printConfigShowHelp()
+				os.Exit(0)
+			}
+			if configCmd.NArg() > 1 {
+				fmt.Println("Error: Too many arguments for config show command")
+				printConfigShowHelp()
+				os.Exit(1)
+			}
+			showConfig()
+		case "reset":
+			if configCmd.Arg(1) == "-h" || configCmd.Arg(1) == "--help" {
+				printConfigResetHelp()
+				os.Exit(0)
+			}
+			if configCmd.NArg() > 1 {
+				fmt.Println("Error: Too many arguments for config reset command")
+				printConfigResetHelp()
+				os.Exit(1)
+			}
+			resetConfig()
+		default:
+			if configCmd.NArg() < 2 {
+				fmt.Println("Error: Insufficient arguments for config command")
+				printConfigHelp()
+				os.Exit(1)
+			}
+			configureSettings(configCmd.Arg(0), configCmd.Arg(1))
 		}
-		configureSettings(configCmd.Arg(0), configCmd.Arg(1))
 	default:
 		fmt.Printf("Unknown command: %s\n", os.Args[1])
 		printMainHelp()
@@ -79,6 +104,9 @@ func printCreateHelp() {
 func printConfigHelp() {
 	fmt.Println("Usage: gh prai config <key> <value>")
 	fmt.Println("\nConfigure settings for the gh-prai extension")
+	fmt.Println("\nCommands:")
+	fmt.Println("  show     Show the current configuration settings")
+	fmt.Println("  reset    Reset the configuration settings to default values")
 	fmt.Println("\nAvailable keys:")
 	fmt.Println("  api_key    Set the OpenAI API key")
 	fmt.Println("  language   Set the language for PR title and description (e.g., 'en' for English, 'ja' for Japanese)")
@@ -86,4 +114,14 @@ func printConfigHelp() {
 	fmt.Println("  prompt     Set the custom prompt for AI generation")
 	fmt.Println("\nOptions:")
 	fmt.Println("  --help, -h     Show this help message")
+}
+
+func printConfigShowHelp() {
+	fmt.Println("Usage: gh prai config show")
+	fmt.Println("\nShow the current configuration settings")
+}
+
+func printConfigResetHelp() {
+	fmt.Println("Usage: gh prai config reset")
+	fmt.Println("\nReset the configuration settings to default values")
 }

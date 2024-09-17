@@ -22,7 +22,6 @@ func loadTemplate(templatePath string) string {
 	}
 
 	fmt.Printf("Using template from %s\n", templatePath)
-	fmt.Printf("Template content:\n%s\n", string(content))
 
 	return string(content)
 }

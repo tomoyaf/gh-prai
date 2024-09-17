@@ -1,10 +1,13 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"github.com/mattn/go-colorable"
+	json "github.com/neilotoole/jsoncolor"
 )
 
 type Config struct {
@@ -14,20 +17,60 @@ type Config struct {
 	Prompt   string `json:"prompt"`
 }
 
+func getLanguage() string {
+	lang := os.Getenv("LANG")
+	
+	if lang == "" {
+		lang = os.Getenv("LC_ALL")
+	}
+	
+	if strings.HasPrefix(strings.ToLower(lang), "ja") {
+		return "ja"
+	}
+	
+	return "en" // default to English
+}
+
+func getDefaultConfig() Config {
+	return Config{
+		Language: getLanguage(),
+		Template: "./.github/pull_request_template.md",
+		Prompt:   getDefaultPrompt(),
+	}
+}
+
 func loadConfig() Config {
 	configPath := getConfigPath()
 	file, err := os.ReadFile(configPath)
 	if err != nil {
-		return Config{
-			Language: "ja",
-			Template: "./.github/pull_request_template.md",
-			Prompt:   getDefaultPrompt(),
-		}
+		return getDefaultConfig()
 	}
 
 	var config Config
 	json.Unmarshal(file, &config)
 	return config
+}
+
+func showConfig() {
+	fmt.Printf("\n⚙️ Current config (%s)\n\n", getConfigPath())
+
+	config := loadConfig()
+	out := colorable.NewColorable(os.Stdout)
+	enc := json.NewEncoder(out)
+	clrs := json.DefaultColors()
+	enc.SetColors(clrs)
+	enc.SetIndent("", "  ")
+	enc.Encode(config)
+}
+
+func resetConfig() {
+	config := getDefaultConfig()
+	err := saveConfig(config)
+	if err != nil {
+		fmt.Printf("Error resetting configuration: %v\n", err)
+	} else {
+		fmt.Println("Configuration reset to default values")
+	}
 }
 
 func saveConfig(config Config) error {
