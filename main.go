@@ -2,25 +2,27 @@ package main
 
 import (
 	"fmt"
-
-	"github.com/cli/go-gh/v2/pkg/api"
+	"os"
 )
 
 func main() {
-	fmt.Println("hi world, this is the gh-prai extension!")
-	client, err := api.DefaultRESTClient()
-	if err != nil {
-		fmt.Println(err)
-		return
+	if len(os.Args) < 2 {
+		createPR()
+		os.Exit(0)
 	}
-	response := struct {Login string}{}
-	err = client.Get("user", &response)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Printf("running as %s\n", response.Login)
-}
 
-// For more examples of using go-gh, see:
-// https://github.com/cli/go-gh/blob/trunk/example_gh_test.go
+	switch os.Args[1] {
+	case "create":
+		createPR()
+	case "config":
+		if len(os.Args) < 3 {
+			fmt.Println("Usage: gh prai config [key] [value]")
+			fmt.Println("Available keys: api_key, language, template, prompt")
+			os.Exit(1)
+		}
+		configureSettings(os.Args[2], os.Args[3])
+	default:
+		fmt.Printf("Unknown command: %s\n", os.Args[1])
+		os.Exit(1)
+	}
+}
