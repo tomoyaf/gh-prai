@@ -38,8 +38,11 @@ gh prai config template default  # or 'local'
 ```shell
 gh prai config prompt "Your custom prompt"
 ```
+```shell
+gh prai --help # `gh prai -h` and `gh prai config -h` and `gh prai create -h`
+```
 
 ### Description
 
 - Uses the ChatGPT API to generate the body of a Pull Request
-- Contains `gh pr create`, which performs up to PR creation.
+- Contains `gh pr create` (and `gh pr`), which performs up to PR creation.
