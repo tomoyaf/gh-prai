@@ -2,77 +2,227 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/sashabaranov/go-openai"
 )
 
+var baseBranch string
+
+func init() {
+	flag.StringVar(&baseBranch, "base", "", "Specify the base branch for the PR")
+}
+
 func createPR() {
+	colorPrint := color.New(color.FgHiGreen, color.Bold)
+	errorPrint := color.New(color.FgHiRed, color.Bold)
+	
+	flag.Parse()
+
 	config := loadConfig()
 
 	if config.APIKey == "" {
-		fmt.Println("OpenAI API key is not set. Please set it using 'gh prai config api_key YOUR_API_KEY'\nsee: https://platform.openai.com/api-keys")
+		errorPrint.Println("OpenAI API key is not set. Please set it using 'gh prai config api_key YOUR_API_KEY'\nsee: https://platform.openai.com/api-keys")
 		os.Exit(1)
 	}
 
-	diff, err := getPRDiff()
+	if baseBranch == "" {
+		var err error
+		baseBranch, err = getDefaultBranch()
+		if err != nil {
+			errorPrint.Printf("Error getting default branch: %v\n", err)
+			os.Exit(1)
+		}
+	}
+	
+	headBranch, _ := getCurrentBranch()
+	existingPR, err := checkExistingPR(baseBranch, headBranch)
 	if err != nil {
-		fmt.Printf("Error getting PR diff: %v\n", err)
+		errorPrint.Printf("Error checking for existing PR: %v\n", err)
+		os.Exit(1)
+	}
+	if existingPR != nil {
+		fmt.Printf("An existing PR (#%d) was found:\n\n", existingPR.Number)
+		pullRequestUrl := getPullRequestUrl(existingPR.Number)
+		colorPrint.Printf("%s #%d\n", existingPR.Title, existingPR.Number)
+		colorPrint.Println(pullRequestUrl)
+		fmt.Print("\n")
+		if !promptUser("\nDo you want to update this PR? ([y]/n): ") {
+			fmt.Println("Operation cancelled.")
+			return
+		}
+	}
+
+	fmt.Print("\n")
+
+	diff, err := getPRDiff(baseBranch)
+	if err != nil {
+		errorPrint.Printf("Error getting PR diff: %v\n", err)
 		os.Exit(1)
 	}
 
 	template := loadTemplate(config.Template)
 	description, err := generatePRDescription(diff, template, config)
 	if err != nil {
-		fmt.Printf("Error generating PR description: %v\n", err)
+		errorPrint.Printf("Error generating PR description: %v\n", err)
 		os.Exit(1)
 	}
 
 	title, err := generatePRTitle(diff, config)
 	if err != nil {
-		fmt.Printf("Error generating PR title: %v\n", err)
+		errorPrint.Printf("Error generating PR title: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Println("title:")
-	fmt.Println(title)
-	fmt.Println("\ndescription:")
-	fmt.Println(description)
+	fmt.Println("\n🤖 Title")
+	colorPrint.Println(title)
+	fmt.Println("\n🤖 Description")
+	colorPrint.Println(description)
+	fmt.Print("\n")
 
-	confirmCreate := promptUser("Do you want to create a PR with this title and description? ([y]/n): ")
+	prompt := "\nDo you want to create a PR with this title and description? ([y]/n): "
+	if existingPR != nil {
+		prompt = fmt.Sprintf("\nDo you want to update the existing PR (#%d) with this title and description? ([y]/n): ", existingPR.Number)
+	}
+	confirmCreate := promptUser(prompt)
 	for !confirmCreate {
 		title = promptForEdit("title", title)
 		description = promptForEdit("description", description)
 
-		fmt.Println("title:")
-		fmt.Println(title)
-		fmt.Println("\ndescription:")
-		fmt.Println(description)
+		fmt.Println("🤖 Title")
+		colorPrint.Print(title)
+		fmt.Println("\n🤖 Description:")
+		colorPrint.Print(description)
 
-		confirmCreate = promptUser("Do you want to create a PR with this title and description? ([y]/n): ")
+		confirmCreate = promptUser(prompt)
 	}
 
-	err = executePRCreate(title, description)
-	if err != nil {
-		fmt.Printf("Error creating PR: %v\n", err)
-		os.Exit(1)
+	if existingPR != nil {
+		fmt.Print("\n\n")
+		err = updatePR(existingPR.Number, title, description)
+		if err != nil {
+			errorPrint.Printf("Error updating PR: %v\n", err)
+			os.Exit(1)
+		}
+		
+		pullRequestUrl := getPullRequestUrl(existingPR.Number)
+
+		colorPrint.Printf("\n\n%s #%d\n%s\n\n", title, existingPR.Number, pullRequestUrl)
+		fmt.Printf("Pull Request updated successfully!\n")
+	} else {
+		fmt.Print("\n\n")
+		err = executePRCreate(title, description, baseBranch)
+		if err != nil {
+			errorPrint.Printf("Error creating PR: %v\n", err)
+			os.Exit(1)
+		}
+		createdPR, err := checkExistingPR(baseBranch, headBranch)
+		if err != nil {
+			errorPrint.Printf("Error checking for created PR: %v\n", err)
+			os.Exit(1)
+		}
+
+		pullRequestUrl := getPullRequestUrl(createdPR.Number)
+
+		colorPrint.Printf("\n\n%s #%d\n%s\n\n", title, createdPR.Number, pullRequestUrl)
+		fmt.Println("Pull Request created successfully!")
 	}
-	fmt.Println("Pull Request created successfully!")
 }
 
-func getPRDiff() (string, error) {
-	cmd := exec.Command("gh", "pr", "diff")
+type PullRequest struct {
+	Number int    `json:"number"`
+	Title  string `json:"title"`
+}
+
+func getPullRequestUrl(pullRequestNumber int) string {
+	cmd := exec.Command("gh", "pr", "view", fmt.Sprintf("%d", pullRequestNumber), "--json", "url", "--jq", ".url")
+	output, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(output))
+}
+
+func checkExistingPR(baseBranch, headBranch string) (*PullRequest, error) {
+	cmd := exec.Command(
+		"gh", "pr", "list",
+		"--state", "open", "--json", "number,title",
+		"-B", baseBranch, "-H", headBranch,
+	)
+	output, err := cmd.Output()
+	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			// Exit status 1 means no PR exists, which is not an error for us
+			if exitError.ExitCode() == 1 {
+				return nil, nil
+			}
+		}
+		return nil, err
+	}
+
+	var pullRequests []PullRequest
+	err = json.Unmarshal(output, &pullRequests)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing PR data: %v", err)
+	}
+	if len(pullRequests) == 0 {
+		return nil, nil
+	}
+
+	return &pullRequests[0], nil
+}
+
+func updatePR(number int, title, body string) error {
+	cmd := exec.Command("gh", "pr", "edit", fmt.Sprintf("%d", number), "--title", title, "--body", body)
+	return cmd.Run()
+}
+
+func getDefaultBranch() (string, error) {
+	cmd := exec.Command("gh", "repo", "view", "--json=defaultBranchRef", "--jq", ".defaultBranchRef.name")
 	output, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
-	return string(output), nil
+	return strings.TrimSpace(string(output)), nil
+}
+
+func getPRDiff(baseBranch string) (string, error) {
+	currentBranch, err := getCurrentBranch()
+	if err != nil {
+		return "", err
+	}
+	cmd := exec.Command("git", "diff", fmt.Sprintf("origin/%s...%s", baseBranch, currentBranch))
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+
+	diff := string(output)
+	if diff == "" {
+		fmt.Printf("origin/%s...%s: No changes to create a PR for.\n", baseBranch, currentBranch)
+		os.Exit(0)
+	}
+	return diff, nil
+}
+
+func getCurrentBranch() (string, error) {
+	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
 }
 
 func generatePRDescription(diff, template string, config Config) (string, error) {
+	fmt.Println("Generating PR description...")
+
 	client := openai.NewClient(config.APIKey)
 	resp, err := client.CreateChatCompletion(
     context.Background(),
@@ -120,6 +270,8 @@ The goal is to create a PR description that provides all necessary information a
 }
 
 func generatePRTitle(diff string, config Config) (string, error) {
+	fmt.Println("Generating PR title...")
+
 	client := openai.NewClient(config.APIKey)
 	resp, err := client.CreateChatCompletion(
     context.Background(),
@@ -160,26 +312,26 @@ func generatePRTitle(diff string, config Config) (string, error) {
 	return resp.Choices[0].Message.Content, nil
 }
 
-func executePRCreate(title, body string) error {
-	cmd := exec.Command("gh", "pr", "create", "--title", title, "--body", body)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+func executePRCreate(title, body, baseBranch string) error {
+	cmd := exec.Command("gh", "pr", "create", "--title", title, "--body", body, "--base", baseBranch)
 	return cmd.Run()
 }
 
 func promptForEdit(fieldName, content string) string {
+	errorPrint := color.New(color.FgHiRed, color.Bold)
+
 	for {
-		fmt.Printf("Do you want to edit the %s? (y/n): ", fieldName)
+		fmt.Printf("Do you want to edit the %s? ([y]/n): ", fieldName)
 		var response string
 		fmt.Scanln(&response)
 
-		if strings.ToLower(response) != "y" {
+		if strings.ToLower(response) == "n" {
 			return content
 		}
 
 		editedContent, err := editInEditor(content)
 		if err != nil {
-			fmt.Printf("Error editing %s: %v\n", fieldName, err)
+			errorPrint.Printf("Error editing %s: %v\n", fieldName, err)
 			continue
 		}
 
