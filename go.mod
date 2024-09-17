@@ -4,10 +4,13 @@ go 1.23.1
 
 require github.com/cli/go-gh/v2 v2.10.0
 
+require github.com/mattn/go-colorable v0.1.13 // indirect
+
 require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/cli/safeexec v1.0.0 // indirect
 	github.com/cli/shurcooL-graphql v0.0.4 // indirect
+	github.com/fatih/color v1.17.0
 	github.com/henvic/httpretty v0.0.6 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
