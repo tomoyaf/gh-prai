@@ -1,6 +1,6 @@
 module github.com/tomoyaf/gh-prai
 
-go 1.23.1
+go 1.23
 
 require github.com/cli/go-gh/v2 v2.10.0
 
