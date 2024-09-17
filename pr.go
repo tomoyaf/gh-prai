@@ -244,8 +244,8 @@ func generatePRDescription(diff, template string, config Config) (string, error)
 		Model: openai.GPT4oMini,
 		Messages: []openai.ChatCompletionMessage{
 			{
-					Role:    openai.ChatMessageRoleSystem,
-					Content: `You are an AI assistant specialized in creating concise and informative Pull Request (PR) descriptions. Your task is to analyze the provided code diff and generate a clear, structured PR description that focuses on essential information. Follow these guidelines:
+				Role: openai.ChatMessageRoleSystem,
+				Content: `You are an AI assistant specialized in creating concise and informative Pull Request (PR) descriptions. Your task is to analyze the provided code diff and generate a clear, structured PR description that focuses on essential information. Follow these guidelines:
 
 1. Title: Use the first line of the description as a clear, concise title that summarizes the main purpose of the changes.
 
@@ -268,14 +268,14 @@ func generatePRDescription(diff, template string, config Config) (string, error)
 The goal is to create a PR description that provides all necessary information about the changes in a brief, easily scannable format.`,
 			},
 			{
-					Role:    openai.ChatMessageRoleUser,
-					Content: fmt.Sprintf("Generate a Pull Request description in %s for the following diff, using this template:\n\nTemplate:\n%s\n\nDiff:\n%s", config.Language, template, diff),
+				Role:    openai.ChatMessageRoleUser,
+				Content: fmt.Sprintf("Generate a Pull Request description in %s for the following diff, using this template:\n\nTemplate:\n%s\n\nDiff:\n%s", config.Language, template, diff),
 			},
 		},
 		MaxTokens: 800,
-		Stream: true,
+		Stream:    true,
 	}
-		
+
 	ctx := context.Background()
 
 	stream, err := client.CreateChatCompletionStream(ctx, req)
@@ -285,7 +285,7 @@ The goal is to create a PR description that provides all necessary information a
 	defer stream.Close()
 
 	var fullResponse strings.Builder
-	
+
 	for {
 		response, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
@@ -311,8 +311,8 @@ func generatePRTitle(diff string, config Config) (string, error) {
 		Model: openai.GPT4oMini,
 		Messages: []openai.ChatCompletionMessage{
 			{
-					Role:    openai.ChatMessageRoleSystem,
-					Content: `You are an AI assistant that generates concise, informative, and impactful Pull Request titles based on the provided diff. Strictly adhere to these rules:
+				Role: openai.ChatMessageRoleSystem,
+				Content: `You are an AI assistant that generates concise, informative, and impactful Pull Request titles based on the provided diff. Strictly adhere to these rules:
 					1. Start with an English type prefix (feat, fix, docs, style, refactor, test, chore) followed by a colon and a space.
 					2. Use the specified language for the main content of the title, unless English terms are more appropriate or widely used in the tech context.
 					3. Use present tense, imperative mood verbs (e.g., "Add", "Update", "Fix", "Implement" or their equivalents in the specified language).
@@ -329,14 +329,14 @@ func generatePRTitle(diff string, config Config) (string, error) {
 					Remember, the title should allow developers to immediately understand the core change without reading the full diff.`,
 			},
 			{
-					Role:    openai.ChatMessageRoleUser,
-					Content: fmt.Sprintf("Generate a short, impactful, and descriptive Pull Request title in %s for the following diff:\n\n%s", config.Language, diff),
+				Role:    openai.ChatMessageRoleUser,
+				Content: fmt.Sprintf("Generate a short, impactful, and descriptive Pull Request title in %s for the following diff:\n\n%s", config.Language, diff),
 			},
 		},
 		MaxTokens: 60,
-		Stream: true,
+		Stream:    true,
 	}
-		
+
 	ctx := context.Background()
 
 	stream, err := client.CreateChatCompletionStream(ctx, req)
@@ -344,9 +344,9 @@ func generatePRTitle(diff string, config Config) (string, error) {
 		return "", err
 	}
 	defer stream.Close()
-	
+
 	var fullResponse strings.Builder
-	
+
 	for {
 		response, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
