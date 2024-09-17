@@ -2,6 +2,12 @@
 1. Generate the title and body of the Pull Request with ChatGPT API based on git diff
 2. Create a new Pull Request or update an existing Pull Request based on this title and body.
 
+
+
+https://github.com/user-attachments/assets/b09d5c22-6711-4bbc-b652-3675b922c0fe
+
+
+
 ### How to install?
 
 ```shell
