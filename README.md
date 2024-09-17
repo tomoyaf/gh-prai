@@ -1,4 +1,7 @@
 ## PRAI
+
+[![release](https://github.com/tomoyaf/gh-prai/actions/workflows/release.yml/badge.svg)](https://github.com/tomoyaf/gh-prai/actions/workflows/release.yml)
+
 [GitHub CLI Extension](https://docs.github.com/ja/github-cli/github-cli/about-github-cli)
 
 ChatGPT API generates Pull Requests title and description.
