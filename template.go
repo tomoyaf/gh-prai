@@ -6,18 +6,22 @@ import (
 	"path/filepath"
 )
 
-func loadTemplate(templateName string) string {
-	if templateName == "default" {
+func loadTemplate(templatePath string) string {
+	if templatePath == "default" {
 		return getDefaultTemplate()
 	}
-
-	templatePath := filepath.Join(".github", "PULL_REQUEST_TEMPLATE.md")
+	
+	if templatePath == "" {
+		templatePath = filepath.Join(".github", "pull_request_template.md")
+	}
 	content, err := os.ReadFile(templatePath)
 	if err != nil {
 		fmt.Printf("Error reading template file: %v\n", err)
 		fmt.Println("Using default template instead.")
 		return getDefaultTemplate()
 	}
+
+	fmt.Printf("Using template from %s\n", templatePath)
 
 	return string(content)
 }
