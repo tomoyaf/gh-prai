@@ -40,7 +40,7 @@ gh prai # or 'gh prai create'
 gh prai config language ja  # or 'en'
 ```
 ```shell
-gh prai config template default  # or 'local'
+gh prai config template default  # or './.github/PULL_REQUEST_TEMPLATE/mytemplate.md'
 ```
 ```shell
 gh prai config prompt "Your custom prompt"
